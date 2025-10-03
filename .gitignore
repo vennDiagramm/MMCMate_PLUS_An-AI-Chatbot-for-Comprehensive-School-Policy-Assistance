@@ -1,0 +1,10 @@
+# Ignore environment files
+/chatBot/
+/__pycache__/
+.pip_cache/
+/chat_history/
+gemini_tone/__pycache__/
+
+# Ignore the .env file 
+.env
+.devcontainer
