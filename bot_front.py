@@ -1,7 +1,6 @@
 import bot_back as back
 from chat_session import init_chat, add_message, display_chat, start_new_chat
 import streamlit as st
-import os
 
 def main():
     st.set_page_config(
@@ -21,7 +20,7 @@ def main():
     # --- New Chat Button ---
     if st.button("🆕 New Chat"):
         start_new_chat()
-        st.experimental_rerun()
+        st.rerun()
 
     # --- Display current chat ---
     display_chat()

@@ -1,0 +1,9 @@
+psycopg2-binary
+python-dotenv
+langdetect
+nltk
+fuzzywuzzy
+python-Levenshtein
+streamlit
+langchain
+langchain-google-genai
