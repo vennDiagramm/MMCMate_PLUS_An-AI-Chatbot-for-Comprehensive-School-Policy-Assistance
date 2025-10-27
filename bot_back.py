@@ -21,17 +21,37 @@ load_dotenv()
 import Checkers as input_checker
 input_checker = input_checker.InputChecker()
 
-# Access the API_KEY environment variable
-api_key = os.getenv('API_KEY')
 
 # Initialize memory (conversation stored in memory)
 memory = ConversationBufferMemory(memory_key="messages", return_messages=True)
-model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-preview-05-20",
-    temperature=0.2,
-    memory=memory,
-    api_key=api_key
-)
+_model = None  # Avoid clashing with Streamlit
+
+def get_model():
+    global _model
+    if _model is None:
+        import streamlit as st
+        import asyncio
+        
+        # Try Streamlit secrets first, fallback to .env for local
+        try:
+            api_key = st.secrets["GOOGLE_API_KEY"]
+        except:
+            api_key = os.getenv('API_KEY')
+        
+        # Create event loop if it doesn't exist || to avoid RuntimeError in Streamlit
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        _model = ChatGoogleGenerativeAI(
+            model="gemini-2.5-flash-preview-05-20",
+            temperature=0.2,
+            google_api_key=api_key
+        )
+    return _model
+
 
 # Keywords for conversation
 GREETING_KEYWORDS = ["hi", "hello", "hey", "greetings", "whats up", "what's up", "yo", "how are you", "how are you doing"]
@@ -44,11 +64,12 @@ IDENTITY_KEYWORDS = [ "what are you", "who are you", "are you a bot", "what is y
                      "what do you do", "what is your function", "what is your role", "what are you here for"]
 
 
-
 # Query the LLM
 def query_gemini_api(user_input):
     tone = gem_tone()
     db_content = db.extract_raw_data_from_db()
+
+    model = get_model() # model initialization
 
     prompt = PromptTemplate(
         input_variables=["db_content", "user_input", "tone"],

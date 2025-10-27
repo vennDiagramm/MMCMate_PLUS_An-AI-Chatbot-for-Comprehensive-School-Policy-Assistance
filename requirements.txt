@@ -5,5 +5,5 @@ nltk
 fuzzywuzzy
 python-Levenshtein
 streamlit
-langchain
+langchain==0.1.20
 langchain-google-genai
