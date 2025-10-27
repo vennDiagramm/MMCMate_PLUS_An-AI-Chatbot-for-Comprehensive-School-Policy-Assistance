@@ -147,7 +147,7 @@ def handle_conversation():
             for word in result_gen:
                 assistant_message += word
                 placeholder.markdown(f"<div style='text-align: justify;'>{assistant_message}</div>", unsafe_allow_html=True)
-                time.sleep(0.02)
+                time.sleep(0.01) # simulate typing effect / speed
 
         # Add assistant response to session state
         st.session_state.messages.append({"role": "assistant", "content": assistant_message})
