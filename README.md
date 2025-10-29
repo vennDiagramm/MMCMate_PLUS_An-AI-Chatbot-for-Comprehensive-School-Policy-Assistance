@@ -74,9 +74,14 @@ Since the repository is public:
 streamlit run bot_front.py
 ```
 
+---
+
 **Check out our App!**
-[**mmcmate2025** []](https://mmcmate2025.streamlit.app/)
-*`Note: Wake it up if it's sleeping!`*
+- [**mmcmate2025**](https://mmcmate2025.streamlit.app/)
+- *`Note: Wake it up if it's sleeping!`*
+
+**Admin Panel Repository**
+- [MMCMate-Management-Site](https://github.com/Joooban/MMCMate-Management-Site)
 
 ---
 
