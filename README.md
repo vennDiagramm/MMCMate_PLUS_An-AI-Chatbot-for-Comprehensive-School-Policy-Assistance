@@ -1,4 +1,4 @@
-# MMCMate+ – AI Chatbot for Comprehensive School Policy Assistance
+# 📚 MMCMate+ – AI Chatbot for Comprehensive School Policy Assistance 🤖
 
 Welcome to the repository for **MMCMate+**, an upgraded AI-powered chatbot designed to assist students, teachers, and administrators of **Mapúa Malayan Colleges Mindanao (Mapúa MCM)** in navigating school policies, rules, and institutional guidelines. This project was developed as part of our **IT104L: Application Development and Emerging Technologies** course.
 
@@ -37,7 +37,8 @@ MMCMate PLUS builds upon the foundation of the original MMCMate, integrating enh
 python -m venv mmcmate_plus
 
 # Activate the environment
-# Windows\mmcmate_plus\Scripts\activate
+# Windows
+file_path\mmcmate_plus\Scripts\activate
 # macOS/Linux
 source mmcmate_plus/bin/activate
 ```
