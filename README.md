@@ -93,5 +93,6 @@ streamlit run bot_front.py
 ---
 
 📬 **Contact & Acknowledgments**
+
 This chatbot was developed by students of **Mapúa Malayan Colleges Mindanao (MMCM)** for academic purposes under **CS140-1: Software Engineering 1**.  
 Special thanks to our instructor, as well as the **Gemini**, **LangChain**, and **Streamlit** communities for their invaluable tools and documentation.
