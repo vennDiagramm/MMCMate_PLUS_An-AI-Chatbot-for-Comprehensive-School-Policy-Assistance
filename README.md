@@ -76,12 +76,15 @@ streamlit run bot_front.py
 
 ---
 
-**Check out our App!**
-- [**mmcmate2025**](https://mmcmate2025.streamlit.app/)
-- *`Note: Wake it up if it's sleeping!`*
+🔗 **Check out our App!**
 
-**Admin Panel Repository**
-- [MMCMate-Management-Site](https://github.com/Joooban/MMCMate-Management-Site)
+[**mmcmate2025**](https://mmcmate2025.streamlit.app/)
+*`(Wake it up if it's sleeping!)`*
+
+
+🧑🏼‍🏫 **Admin Panel Repository**
+
+[MMCMate-Management-Site](https://github.com/Joooban/MMCMate-Management-Site)
 
 ---
 
