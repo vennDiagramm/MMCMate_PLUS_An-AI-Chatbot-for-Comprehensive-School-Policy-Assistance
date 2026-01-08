@@ -46,7 +46,7 @@ def get_model():
             asyncio.set_event_loop(loop)
         
         _model = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-preview-05-20",
+            model="gemini-3-flash-preview",
             temperature=0.2,
             google_api_key=api_key
         )
