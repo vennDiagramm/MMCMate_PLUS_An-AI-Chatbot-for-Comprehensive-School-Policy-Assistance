@@ -116,7 +116,7 @@ IDENTITY_KEYWORDS = [ "what are you", "who are you", "are you a bot", "what is y
 
 # Query the LLM
 def query_gemini_api(user_input):
-    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME, API_CALL_COUNT
+    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME, API_CALL_COUNT, MAX_API_CALLS 
     
     tone = gem_tone()
     db_content = db.extract_raw_data_from_db()
@@ -174,7 +174,6 @@ def query_gemini_api(user_input):
         )
     
     else:
-        global API_CALL_COUNT
         # Check if quota has been auto-reset
         quota_available = check_and_reset_quota()
         
