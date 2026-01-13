@@ -2,6 +2,7 @@
 import db
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
+from google.api_core.exceptions import ResourceExhausted
 from gemini_tone.tone import gem_tone
 import re
 
@@ -48,6 +49,7 @@ def get_model():
         _model = ChatGoogleGenerativeAI(
             model="gemini-3-flash-preview",
             temperature=0.2,
+            max_retries=0,
             google_api_key=api_key
         )
     return _model
@@ -112,15 +114,33 @@ def query_gemini_api(user_input):
             "It is part of the Mapúa University system. If you have specific questions about MMCM, feel free to ask!"
         )
     
-    elif input_checker.contains_keywords(user_input, ACCEPTED_KEYWORDS):
-        response = llm_chain.run({"db_content": db_content, "user_input": user_input, "tone": tone})
-    else:
-        response = llm_chain.run({"db_content": db_content, "user_input": user_input, "tone": tone})
+    elif input_checker.contains_keywords(user_input, ACCEPTED_KEYWORDS) or True:
+        try:
+            response = llm_chain.run({
+                "db_content": db_content,
+                "user_input": user_input,
+                "tone": tone
+            })
+        except ResourceExhausted:
+            return (
+                "⚠️ **Daily AI limit reached**\n\n"
+                "Sorry! I’ve temporarily run out of requests for today. "
+                "Please try again later or come back tomorrow."
+            )
+        except Exception:
+            return (
+                "⚠️ Something went wrong while generating a response. "
+                "Please try again in a moment."
+            )
 
-    if "Unavailable" in response:
-        return "I'm sorry, I couldn't find an answer to your question. Could you please rephrase it or ask something else?"
+        if "Unavailable" in response:
+            return (
+                "I'm sorry, I couldn't find an answer to your question. "
+                "Could you please rephrase it or ask something else?"
+            )
 
-    return response
+        return response
+
 
 # Handle conversation in-memory only
 def handle_conversation():
