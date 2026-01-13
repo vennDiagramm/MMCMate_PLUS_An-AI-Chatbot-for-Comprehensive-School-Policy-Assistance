@@ -160,7 +160,7 @@ def query_gemini_api(user_input):
             "It is part of the Mapúa University system. If you have specific questions about MMCM, feel free to ask!"
         )
     
-    elif input_checker.contains_keywords(user_input, ACCEPTED_KEYWORDS):
+    else:
         # Check if quota has been auto-reset
         quota_available = check_and_reset_quota()
         
@@ -206,12 +206,6 @@ def query_gemini_api(user_input):
                 "Something went wrong while generating a response. "
                 "Please try again in a moment."
             )
-
-    else:
-        return (
-            "I'm sorry, I can only assist with questions related to the school's handbook. "
-            "Could you please ask something else or clarify your question?"
-        )
 
 
 # Handle conversation in-memory only
