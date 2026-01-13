@@ -32,6 +32,9 @@ QUOTA_EXHAUSTED_TIME = None
 PHILIPPINE_TZ = pytz.timezone('Asia/Manila')
 RESET_HOUR = 16  # 4:00 PM
 
+API_CALL_COUNT = 0
+MAX_API_CALLS = 20  # Gemini free tier limit
+
 # Initialize memory (conversation stored in memory)
 memory = ConversationBufferMemory(memory_key="messages", return_messages=True)
 _model = None  # Avoid clashing with Streamlit
@@ -59,14 +62,13 @@ def get_model():
             model="gemini-3-flash-preview",
             temperature=0.2,
             max_retries=0,
-            request_timeout=15,
             google_api_key=api_key
         )
     return _model
 
 # Checks if it's past 4 PM Philippine Time and resets the quota flag. || Returns True if quota is available, False if exhausted.
 def check_and_reset_quota():
-    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME
+    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME, API_CALL_COUNT 
     
     if not QUOTA_EXHAUSTED:
         return True  # Quota is available
@@ -95,6 +97,7 @@ def check_and_reset_quota():
     if now_ph >= next_reset:
         QUOTA_EXHAUSTED = False
         QUOTA_EXHAUSTED_TIME = None
+        API_CALL_COUNT = 0  # Reset API call count
         return True  # Quota has been reset!
     
     return False  # Still exhausted
@@ -113,7 +116,7 @@ IDENTITY_KEYWORDS = [ "what are you", "who are you", "are you a bot", "what is y
 
 # Query the LLM
 def query_gemini_api(user_input):
-    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME
+    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME, API_CALL_COUNT
     
     tone = gem_tone()
     db_content = db.extract_raw_data_from_db()
@@ -161,7 +164,17 @@ def query_gemini_api(user_input):
             "It is part of the Mapúa University system. If you have specific questions about MMCM, feel free to ask!"
         )
     
+    elif API_CALL_COUNT >= MAX_API_CALLS:
+        QUOTA_EXHAUSTED = True
+        QUOTA_EXHAUSTED_TIME = datetime.now(PHILIPPINE_TZ)
+        return (
+            " **Daily Usage Limit Reached**\n\n"
+            "Sorry! I've run out of requests for today. The quota resets at **4:00 PM Philippine Time**.\n\n"
+            "Please try again later!"
+        )
+    
     else:
+        global API_CALL_COUNT
         # Check if quota has been auto-reset
         quota_available = check_and_reset_quota()
         
@@ -185,6 +198,8 @@ def query_gemini_api(user_input):
                 "tone": tone
             })
             
+            API_CALL_COUNT += 1  # Increment counter
+            
             if "Unavailable" in response:
                 return (
                     "I'm sorry, I couldn't find an answer to your question. "
@@ -196,6 +211,7 @@ def query_gemini_api(user_input):
         except ResourceExhausted:
             QUOTA_EXHAUSTED = True
             QUOTA_EXHAUSTED_TIME = datetime.now(PHILIPPINE_TZ)
+            API_CALL_COUNT = MAX_API_CALLS  # Ensure counter is maxed out
             
             return (
                 " **Daily Usage Limit Just Reached**\n\n"
