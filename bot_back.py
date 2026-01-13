@@ -5,6 +5,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from google.api_core.exceptions import ResourceExhausted
 from gemini_tone.tone import gem_tone
 import re
+from datetime import datetime, time
+import pytz
 
 # Import necessary LangChain components
 from langchain.memory import ConversationBufferMemory
@@ -14,7 +16,7 @@ from langchain.chains import LLMChain
 # to deal with gui and secret keys
 import streamlit as st
 from dotenv import load_dotenv
-import time
+import time as time_module
 
 load_dotenv()
 
@@ -22,6 +24,13 @@ load_dotenv()
 import Checkers as input_checker
 input_checker = input_checker.InputChecker()
 
+# Global quota tracking with timestamp
+QUOTA_EXHAUSTED = False
+QUOTA_EXHAUSTED_TIME = None
+
+# Define reset time
+PHILIPPINE_TZ = pytz.timezone('Asia/Manila')
+RESET_HOUR = 16  # 4:00 PM
 
 # Initialize memory (conversation stored in memory)
 memory = ConversationBufferMemory(memory_key="messages", return_messages=True)
@@ -54,6 +63,41 @@ def get_model():
         )
     return _model
 
+# Checks if it's past 4 PM Philippine Time and resets the quota flag. || Returns True if quota is available, False if exhausted.
+def check_and_reset_quota():
+    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME
+    
+    if not QUOTA_EXHAUSTED:
+        return True  # Quota is available
+    
+    # Get current time in PH timezone
+    now_ph = datetime.now(PHILIPPINE_TZ)
+    
+    # Get the time when quota was exhausted
+    if QUOTA_EXHAUSTED_TIME is None:
+        # If no timestamp was recorded, assume it happened recently
+        QUOTA_EXHAUSTED_TIME = now_ph
+        return False
+    
+    # Calculate the next reset time (4 PM today or tomorrow)
+    exhausted_date = QUOTA_EXHAUSTED_TIME.date()
+    next_reset = PHILIPPINE_TZ.localize(
+        datetime.combine(exhausted_date, time(RESET_HOUR, 0))
+    )
+    
+    # If exhaustion happened after 4 PM, next reset is tomorrow at 4 PM
+    if QUOTA_EXHAUSTED_TIME.hour >= RESET_HOUR:
+        from datetime import timedelta
+        next_reset += timedelta(days=1)
+    
+    # Check if we've passed the reset time
+    if now_ph >= next_reset:
+        QUOTA_EXHAUSTED = False
+        QUOTA_EXHAUSTED_TIME = None
+        return True  # Quota has been reset!
+    
+    return False  # Still exhausted
+
 
 # Keywords for conversation
 GREETING_KEYWORDS = ["hi", "hello", "hey", "greetings", "whats up", "what's up", "yo", "how are you", "how are you doing"]
@@ -68,6 +112,8 @@ IDENTITY_KEYWORDS = [ "what are you", "who are you", "are you a bot", "what is y
 
 # Query the LLM
 def query_gemini_api(user_input):
+    global QUOTA_EXHAUSTED, QUOTA_EXHAUSTED_TIME
+    
     tone = gem_tone()
     db_content = db.extract_raw_data_from_db()
 
@@ -97,7 +143,7 @@ def query_gemini_api(user_input):
         return "Hello! How may I assist you today?"
     
     elif any(phrase in user_input for phrase in IDENTITY_KEYWORDS):
-        return "I'm MMCMate, your AI chatbot assistant designed to help students understand Mapúa MCM’s school policies, rights, and responsibilities."
+        return "I'm MMCMate+, your AI chatbot assistant designed to help students understand Mapúa MCM's school policies, rights, and responsibilities."
 
     elif user_input.strip() in {"mmcm", "mcm"}:
         return (
@@ -114,32 +160,58 @@ def query_gemini_api(user_input):
             "It is part of the Mapúa University system. If you have specific questions about MMCM, feel free to ask!"
         )
     
-    elif input_checker.contains_keywords(user_input, ACCEPTED_KEYWORDS) or True:
+    elif input_checker.contains_keywords(user_input, ACCEPTED_KEYWORDS):
+        # Check if quota has been auto-reset
+        quota_available = check_and_reset_quota()
+        
+        if not quota_available:
+            # Calculate time until next reset
+            now_ph = datetime.now(PHILIPPINE_TZ)
+            hours_until_reset = RESET_HOUR - now_ph.hour
+            if hours_until_reset <= 0:
+                hours_until_reset += 24
+            
+            return (
+                f" **Daily Usage Limit Reached**\n\n"
+                f"Sorry! I've run out of requests for today. The quota resets at **4:00 PM Philippine Time**.\n\n"
+                f"Approximately **{hours_until_reset} hours** until next reset. Please try again later!"
+            )
+        
         try:
             response = llm_chain.run({
                 "db_content": db_content,
                 "user_input": user_input,
                 "tone": tone
             })
+            
+            if "Unavailable" in response:
+                return (
+                    "I'm sorry, I couldn't find an answer to your question. "
+                    "Could you please rephrase it or ask something else?"
+                )
+            
+            return response
+            
         except ResourceExhausted:
+            QUOTA_EXHAUSTED = True
+            QUOTA_EXHAUSTED_TIME = datetime.now(PHILIPPINE_TZ)
+            
             return (
-                "⚠️ **Daily AI limit reached**\n\n"
-                "Sorry! I’ve temporarily run out of requests for today. "
-                "Please try again later or come back tomorrow."
+                " **Daily Usage Limit Just Reached**\n\n"
+                "Sorry! That was my last available request for today. The quota resets at **4:00 PM Philippine Time**.\n\n"
+                "Please try again later or come back tomorrow!"
             )
         except Exception:
             return (
-                "⚠️ Something went wrong while generating a response. "
+                "Something went wrong while generating a response. "
                 "Please try again in a moment."
             )
 
-        if "Unavailable" in response:
-            return (
-                "I'm sorry, I couldn't find an answer to your question. "
-                "Could you please rephrase it or ask something else?"
-            )
-
-        return response
+    else:
+        return (
+            "I'm sorry, I can only assist with questions related to the school's handbook. "
+            "Could you please ask something else or clarify your question?"
+        )
 
 
 # Handle conversation in-memory only
@@ -167,7 +239,7 @@ def handle_conversation():
             for word in result_gen:
                 assistant_message += word
                 placeholder.markdown(f"<div style='text-align: justify;'>{assistant_message}</div>", unsafe_allow_html=True)
-                time.sleep(0.01) # simulate typing effect / speed
+                time_module.sleep(0.01) # simulate typing effect / speed
 
         # Add assistant response to session state
         st.session_state.messages.append({"role": "assistant", "content": assistant_message})
