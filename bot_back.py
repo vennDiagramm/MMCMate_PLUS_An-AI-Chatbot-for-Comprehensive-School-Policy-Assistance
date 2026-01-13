@@ -59,6 +59,7 @@ def get_model():
             model="gemini-3-flash-preview",
             temperature=0.2,
             max_retries=0,
+            request_timeout=15,
             google_api_key=api_key
         )
     return _model
